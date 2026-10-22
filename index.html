@@ -32,7 +32,7 @@ input,select{padding:8px;border:1px solid #b9c8be;border-radius:6px;max-width:10
 <script>
 // === সেটআপ: শুধু প্রকাশ্য (anon) কী বসান। সার্ভিস রোল বা AI কী কখনোই এখানে নয় ===
 const SUPABASE_URL = "https://gtfeprshiqijiwqqzapl.supabase.co";
-const SUPABASE_ANON_KEY = "<sb_publishable_qYb-LxVIYE6TfaD0BUOZ9w_F6qo4qgM>";
+const SUPABASE_ANON_KEY = "<eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0ZmVwcnNoaXFpaml3cXF6YXBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI2ODY0NTgsImV4cCI6MjEwODI2MjQ1OH0.aNj_5QnbxCTW2Px5OzgbCHdHpKzFzKztOnKraC7IyEI>";
 const ok = !SUPABASE_URL.includes("<");
 const sb = ok ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 const $ = (s) => document.querySelector(s), app = $("#app");
