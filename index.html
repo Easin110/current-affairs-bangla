@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>দৈনিক কারেন্ট অ্যাফেয়ার্স বাংলা</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--g:#0b5d3b;--g2:#07422a;--bg:#fff;--t:#1b2a22;--l:#dfe8e2;--s:#f3f7f4;--e:#b3261e}
+*{box-sizing:border-box}body{margin:0;font:17px/1.7 Kalpurush,SolaimanLipi,"Hind Siliguri",sans-serif;color:var(--t);background:var(--bg)}
+header{background:var(--g);color:#fff;padding:12px 16px}.bar{max-width:1000px;margin:auto;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
+h1{font-size:1.3rem;margin:0}#clock{font-size:.9rem;opacity:.9}
+nav{background:var(--g2)}nav div{max-width:1000px;margin:auto;display:flex;overflow-x:auto}
+nav button{background:none;border:0;color:#fff;padding:10px 14px;font:inherit;cursor:pointer;white-space:nowrap}nav button:hover,nav .on{background:var(--g)}
+main{max-width:1000px;margin:auto;padding:16px}button,input,select{font:inherit}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.card{border:1px solid var(--l);border-radius:6px;padding:14px;background:var(--s);cursor:pointer;text-align:left;color:var(--g2);font-weight:600}
+.card:hover{border-color:var(--g)}.box{border:1px solid var(--l);border-radius:6px;padding:16px;margin:12px 0}
+.opt{display:block;width:100%;text-align:left;border:1px solid var(--l);border-radius:6px;background:#fff;padding:10px 12px;margin:8px 0;cursor:pointer}
+.opt.sel{border-color:var(--g);background:var(--s)}.opt.ok{background:#d9f2e3;border-color:var(--g)}.opt.bad{background:#fbe3e1;border-color:var(--e)}
+.btn{background:var(--g);color:#fff;border:0;border-radius:6px;padding:9px 16px;cursor:pointer}.btn.alt{background:#fff;color:var(--g);border:1px solid var(--g)}.btn.red{background:var(--e)}
+.btn:disabled{opacity:.5}.muted{color:#5b6b62;font-size:.9rem}.err{color:var(--e)}table{width:100%;border-collapse:collapse;font-size:.9rem}td,th{border-bottom:1px solid var(--l);padding:6px;text-align:left;vertical-align:top}
+input,select{padding:8px;border:1px solid #b9c8be;border-radius:6px;max-width:100%}.row{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+:focus-visible{outline:3px solid #f2b705;outline-offset:2px}
+</style>
+</head>
+<body>
+<header><div class="bar"><h1>দৈনিক কারেন্ট অ্যাফেয়ার্স বাংলা</h1><div id="clock"></div></div></header>
+<nav><div id="nav"></div></nav>
+<main id="app">লোড হচ্ছে...</main>
+<script>
+// === সেটআপ: শুধু প্রকাশ্য (anon) কী বসান। সার্ভিস রোল বা AI কী কখনোই এখানে নয় ===
+const SUPABASE_URL = "https://gtfeprshiqijiwqqzapl.supabase.co";
+const SUPABASE_ANON_KEY = "<sb_publishable_qYb-LxVIYE6TfaD0BUOZ9w_F6qo4qgM>";
+const ok = !SUPABASE_URL.includes("<");
+const sb = ok ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const $ = (s) => document.querySelector(s), app = $("#app");
+const bn = (n) => String(n).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[d]);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+setInterval(() => $("#clock").textContent = new Intl.DateTimeFormat("bn-BD", { timeZone: "Asia/Dhaka", dateStyle: "full", timeStyle: "medium" }).format(new Date()), 1000);
+
+const today = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dhaka" }).format(new Date());
+const SECTIONS = [
+  ["আজকের কারেন্ট অ্যাফেয়ার্স", { today: 1 }], ["জাতীয় বিষয়াবলি", { category: "national" }],
+  ["আন্তর্জাতিক বিষয়াবলি", { category: "international" }], ["বিসিএস প্রস্তুতি", { tag: "bcs" }],
+  ["ব্যাংক চাকরির প্রস্তুতি", { tag: "bank" }], ["সরকারি চাকরির প্রস্তুতি", { tag: "govt" }],
+  ["আজকের মডেল টেস্ট", { today: 1, test: 1 }], ["পূর্ববর্তী দিনের প্রশ্ন", { before: 1 }],
+  ["বিষয়ভিত্তিক প্রশ্ন", { topics: 1 }], ["গুরুত্বপূর্ণ সাম্প্রতিক খবর", { news: 1 }]];
+const NAV = [["হোম", home], ["আজকের প্রশ্ন", () => practice({ today: 1 })], ["জাতীয় বিষয়াবলি", () => practice({ category: "national" })],
+  ["আন্তর্জাতিক বিষয়াবলি", () => practice({ category: "international" })], ["পূর্ববর্তী প্রশ্ন", () => practice({ before: 1 })],
+  ["মডেল টেস্ট", () => practice({ today: 1, test: 1 })], ["লগইন", admin]];
+$("#nav").innerHTML = NAV.map((n, i) => `<button data-i="${i}">${n[0]}</button>`).join("");
+$("#nav").onclick = (e) => { const i = e.target.dataset.i; if (i) NAV[i][1](); };
+
+function needSetup() { app.innerHTML = `<div class="box err"><b>সেটআপ বাকি আছে।</b> index.html ফাইলের শুরুতে SUPABASE_URL ও SUPABASE_ANON_KEY বসান। বিস্তারিত নির্দেশনা README-তে আছে।</div>`; }
+function home() {
+  if (!ok) return needSetup();
+  app.innerHTML = `<h2>স্বাগতম</h2><div class="grid">${SECTIONS.map((s, i) => `<button class="card" data-s="${i}">${s[0]}</button>`).join("")}</div>`;
+  app.onclick = (e) => { const i = e.target.dataset.s; if (i) { const f = SECTIONS[i][1]; f.news ? news() : f.topics ? topics() : practice(f); } };
+}
+async function fetchQ(f) {
+  let q = sb.from("questions").select("*").eq("status", "published").order("published_at", { ascending: false }).limit(f.test ? 10 : 100);
+  if (f.category) q = q.eq("category", f.category);
+  if (f.tag) q = q.contains("exam_tags", [f.tag]);
+  if (f.topic) q = q.eq("topic", f.topic);
+  if (f.today) q = q.gte("published_at", today() + "T00:00:00+06:00");
+  if (f.before) q = q.lt("published_at", today() + "T00:00:00+06:00");
+  const { data, error } = await q; if (error) throw error; return data;
+}
+async function practice(f) {
+  if (!ok) return needSetup(); app.innerHTML = "লোড হচ্ছে...";
+  let qs; try { qs = await fetchQ(f); } catch (e) { app.innerHTML = `<p class="err">সমস্যা হয়েছে: ${esc(e.message)}</p>`; return; }
+  if (!qs.length) { app.innerHTML = `<div class="box">এখনো কোনো প্রশ্ন প্রকাশিত হয়নি। প্রতিদিন সকাল ৬টায় নতুন প্রশ্ন আসে।</div>`; return; }
+  let i = 0, sel = null, done = false; const res = [];
+  const show = () => {
+    if (i >= qs.length) { const c = res.filter(Boolean).length;
+      app.innerHTML = `<div class="box"><h2>ফলাফল</h2><p>মোট প্রশ্ন: ${bn(qs.length)}<br>সঠিক উত্তর: ${bn(c)}<br>ভুল উত্তর: ${bn(qs.length - c)}<br>প্রাপ্ত নম্বর: ${bn(c)} / ${bn(qs.length)}</p><button class="btn" id="h">হোম</button></div>`; $("#h").onclick = home; return; }
+    const q = qs[i];
+    app.innerHTML = `<p class="muted">প্রশ্ন ${bn(i + 1)} / ${bn(qs.length)}</p><div class="box"><b>${esc(q.question)}</b>
+    ${q.options.map((o, k) => `<button class="opt ${done ? (k === q.correct_index ? "ok" : k === sel ? "bad" : "") : k === sel ? "sel" : ""}" data-k="${k}" ${done ? "disabled" : ""}>${bn(k + 1)}. ${esc(o)}</button>`).join("")}
+    ${done ? `<p><b>সঠিক উত্তর:</b> ${esc(q.options[q.correct_index])}</p><p><b>ব্যাখ্যা:</b> ${esc(q.explanation)}</p><p class="muted">সংবাদসূত্র: <a href="${esc(q.source_url)}" target="_blank" rel="noopener">${esc(q.source_name)}</a> (${esc(q.news_date)})</p>` : ""}</div>
+    <div class="row"><button class="btn alt" id="pv" ${i ? "" : "disabled"}>আগের প্রশ্ন</button>
+    ${done ? `<button class="btn" id="nx">পরবর্তী প্রশ্ন</button>` : `<button class="btn" id="sb" ${sel === null ? "disabled" : ""}>উত্তর জমা দিন</button>`}</div>`;
+    app.onclick = (e) => { const k = e.target.dataset.k; if (k !== undefined && !done) { sel = +k; show(); } };
+    if ($("#sb")) $("#sb").onclick = () => { done = true; res[i] = sel === q.correct_index; show(); };
+    if ($("#nx")) $("#nx").onclick = () => { i++; sel = null; done = false; show(); };
+    $("#pv").onclick = () => { i--; sel = null; done = false; show(); };
+  }; show();
+}
+async function topics() {
+  const { data } = await sb.from("questions").select("topic").eq("status", "published"); const t = [...new Set((data ?? []).map((x) => x.topic).filter(Boolean))];
+  app.innerHTML = `<h2>বিষয়ভিত্তিক প্রশ্ন</h2>` + (t.length ? `<div class="grid">${t.map((x) => `<button class="card" data-t="${esc(x)}">${esc(x)}</button>`).join("")}</div>` : "কোনো বিষয় নেই।");
+  app.onclick = (e) => { if (e.target.dataset.t) practice({ topic: e.target.dataset.t }); };
+}
+async function news() {
+  const { data } = await sb.from("questions").select("source_name,source_url,news_date,topic").eq("status", "published").order("published_at", { ascending: false }).limit(30);
+  const m = new Map((data ?? []).map((x) => [x.source_url, x]));
+  app.innerHTML = `<h2>গুরুত্বপূর্ণ সাম্প্রতিক খবর</h2>` + ([...m.values()].map((x) => `<div class="box"><a href="${esc(x.source_url)}" target="_blank" rel="noopener">${esc(x.topic || "খবর")}</a><div class="muted">${esc(x.source_name)} · ${esc(x.news_date)}</div></div>`).join("") || "কোনো খবর নেই।");
+}
+
+// ===== অ্যাডমিন =====
+async function admin() {
+  if (!ok) return needSetup();
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { app.innerHTML = `<div class="box"><h2>লগইন</h2><div class="row"><input id="em" type="email" placeholder="ইমেইল"><input id="pw" type="password" placeholder="পাসওয়ার্ড"><button class="btn" id="li">লগইন</button></div><p class="err" id="er"></p></div>`;
+    $("#li").onclick = async () => { const { error } = await sb.auth.signInWithPassword({ email: $("#em").value, password: $("#pw").value }); error ? $("#er").textContent = "সমস্যা হয়েছে: ইমেইল বা পাসওয়ার্ড ভুল।" : admin(); }; return; }
+  const { data: a } = await sb.from("admins").select("user_id").maybeSingle();
+  if (!a) { app.innerHTML = `<div class="box err">এই অ্যাকাউন্টের অ্যাডমিন অনুমতি নেই।</div><button class="btn alt" id="lo">লগআউট</button>`; $("#lo").onclick = async () => { await sb.auth.signOut(); admin(); }; return; }
+  const cnt = async (f) => { let q = sb.from("questions").select("*", { count: "exact", head: true }); q = f(q); return (await q).count ?? 0; };
+  const [tot, tod, pub, rej, news, runs, srcs, sets, drafts] = await Promise.all([
+    cnt((q) => q), cnt((q) => q.gte("created_at", today() + "T00:00:00+06:00")), cnt((q) => q.eq("status", "published")), cnt((q) => q.eq("status", "rejected")),
+    sb.from("news_items").select("*", { count: "exact", head: true }).then((r) => r.count ?? 0),
+    sb.from("job_runs").select("*").order("id", { ascending: false }).limit(10).then((r) => r.data ?? []),
+    sb.from("news_sources").select("*").order("id").then((r) => r.data ?? []), sb.from("settings").select("*").then((r) => r.data ?? []),
+    sb.from("questions").select("*").in("status", ["draft", "rejected"]).order("id", { ascending: false }).limit(30).then((r) => r.data ?? [])]);
+  const S = Object.fromEntries(sets.map((s) => [s.key, s.value])); const last = runs[0];
+  app.innerHTML = `<h2>অ্যাডমিন ড্যাশবোর্ড</h2><div class="grid">${[["মোট প্রশ্ন", tot], ["আজকের তৈরি প্রশ্ন", tod], ["প্রকাশিত", pub], ["প্রত্যাখ্যাত", rej], ["সংগৃহীত খবর", news]].map((x) => `<div class="card">${x[0]}<br><big>${bn(x[1])}</big></div>`).join("")}</div>
+  <div class="box"><b>স্বয়ংক্রিয় কাজ:</b> ${last ? `${esc(last.status === "success" ? "সফল হয়েছে" : last.status === "failed" ? "সমস্যা হয়েছে" : "চলছে")} — ${new Date(last.started_at).toLocaleString("bn-BD", { timeZone: "Asia/Dhaka" })}` : "এখনো চলেনি"}
+  <div class="row"><button class="btn" id="run">এখনই কাজ চালান</button><button class="btn alt" id="lo">লগআউট</button></div><p id="rm" class="muted"></p>
+  <p class="muted">AI ও সংবাদ API অবস্থা: ${last?.error?.includes("API_KEY") ? "<span class=err>AI কী নেই — Supabase Secrets-এ ANTHROPIC_API_KEY যোগ করুন</span>" : "সর্বশেষ চালানোর ফলাফল দেখুন"}</p></div>
+  <div class="box"><h3>সেটিংস</h3><div class="row"><label>জাতীয় প্রশ্ন <input id="sn" type="number" value="${S.daily_national ?? 10}" style="width:80px"></label><label>আন্তর্জাতিক প্রশ্ন <input id="si" type="number" value="${S.daily_international ?? 10}" style="width:80px"></label>
+  <label>স্বয়ংক্রিয় প্রকাশ <select id="sa"><option value="true" ${S.auto_publish !== false ? "selected" : ""}>হ্যাঁ</option><option value="false" ${S.auto_publish === false ? "selected" : ""}>না (খসড়া)</option></select></label><button class="btn" id="ss">সংরক্ষণ</button></div>
+  <p class="muted">প্রকাশের সময়: বাংলাদেশ সময় সকাল ৬টা (Cron: UTC ০০:০০)। বদলাতে SQL-এ cron.schedule পরিবর্তন করুন।</p></div>
+  <div class="box"><h3>সংবাদসূত্র</h3><table>${srcs.map((s) => `<tr><td>${esc(s.name)}<br><span class="muted">${esc(s.url)}</span></td><td>${s.category === "national" ? "জাতীয়" : "আন্তর্জাতিক"}</td><td><button class="btn alt" data-tg="${s.id}">${s.active ? "বন্ধ করুন" : "চালু করুন"}</button> <button class="btn red" data-ds="${s.id}">মুছুন</button></td></tr>`).join("")}</table>
+  <div class="row"><input id="nm" placeholder="সূত্রের নাম"><input id="ur" placeholder="RSS লিংক"><select id="ct"><option value="national">জাতীয়</option><option value="international">আন্তর্জাতিক</option></select><button class="btn" id="as">সূত্র যোগ করুন</button></div></div>
+  <div class="box"><h3>খসড়া ও প্রত্যাখ্যাত প্রশ্ন</h3><table>${drafts.map((q) => `<tr><td>${esc(q.question)}<br><span class="muted">${q.status === "draft" ? "খসড়া" : "প্রত্যাখ্যাত: " + esc(q.reject_reason)}</span></td><td><button class="btn" data-pb="${q.id}">প্রকাশ</button> <button class="btn red" data-dq="${q.id}">মুছুন</button></td></tr>`).join("") || "<tr><td>কিছু নেই</td></tr>"}</table></div>
+  <div class="box"><h3>আগের কাজের ইতিহাস</h3><table>${runs.map((r) => `<tr><td>${new Date(r.started_at).toLocaleString("bn-BD", { timeZone: "Asia/Dhaka" })}</td><td>${r.status === "success" ? "সফল হয়েছে" : r.status === "failed" ? "সমস্যা হয়েছে" : "চলছে"}</td><td class="muted">${esc(r.error ?? JSON.stringify(r.stats ?? {}))}</td></tr>`).join("")}</table></div>`;
+  $("#lo").onclick = async () => { await sb.auth.signOut(); admin(); };
+  $("#run").onclick = async () => { $("#rm").textContent = "লোড হচ্ছে..."; const { data, error } = await sb.functions.invoke("daily-pipeline");
+    $("#rm").textContent = error ? "সমস্যা হয়েছে: " + (data?.error ?? error.message) : "সফল হয়েছে"; setTimeout(admin, 1500); };
+  $("#ss").onclick = async () => { await sb.from("settings").upsert([{ key: "daily_national", value: +$("#sn").value }, { key: "daily_international", value: +$("#si").value }, { key: "auto_publish", value: $("#sa").value === "true" }]); admin(); };
+  $("#as").onclick = async () => { await sb.from("news_sources").insert({ name: $("#nm").value, url: $("#ur").value, category: $("#ct").value }); admin(); };
+  app.onclick = async (e) => { const d = e.target.dataset;
+    if (d.tg) { const s = srcs.find((x) => x.id == d.tg); await sb.from("news_sources").update({ active: !s.active }).eq("id", d.tg); admin(); }
+    if (d.ds && confirm("সূত্রটি মুছে ফেলবেন?")) { await sb.from("news_sources").delete().eq("id", d.ds); admin(); }
+    if (d.pb) { await sb.from("questions").update({ status: "published", published_at: new Date().toISOString() }).eq("id", d.pb); admin(); }
+    if (d.dq && confirm("প্রশ্নটি মুছে ফেলবেন?")) { await sb.from("questions").delete().eq("id", d.dq); admin(); } };
+}
+home();
+</script>
+</body>
+</html>
